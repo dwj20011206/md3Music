@@ -178,7 +178,8 @@ jobs:
 
       - name: Verify APKs
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
+          trap 'rc=$?; echo "::error::Verify APKs failed at line $LINENO, exit=$rc: $BASH_COMMAND"' ERR
           apk_dir="build/app/outputs/flutter-apk"
           ls -lh "$apk_dir"/
           aapt2="$ANDROID_HOME/build-tools/36.0.0/aapt2"
