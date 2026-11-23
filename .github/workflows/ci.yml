@@ -275,7 +275,7 @@ jobs:
           check_tv "$tv32_apk" "build/symbols/tv-arm32/app.android-arm.symbols"
 
           # 反向：正常包不得含 TV 焦点符号
-          for pair in "$std_apk:build/symbols/std-arm64/app.android-arm64.symbols" "$am_apk:build/symbols/am-arm64/app.android-arm64.symbols"; do
+          for pair in "$lite_apk:build/symbols/std-arm64/app.android-arm64.symbols" "$am_apk:build/symbols/am-arm64/app.android-arm64.symbols"; do
             f="${pair%%:*}"; symbols="${pair##*:}"
             if grep -aq DpadFocusable "$symbols"; then
               echo "::error::正常包混入 TV 焦点符号: $f"; exit 1
