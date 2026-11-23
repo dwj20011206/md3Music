@@ -157,6 +157,7 @@ jobs:
       # 的文件恢复 label 还会 404 导致整条 job 失败），因此发布名必须使用纯 ASCII。
       # 中文含义映射见 release notes 的 Downloads 列表。
       - name: Rename APKs to release-ready names
+        id: rename_apks
         run: |
           set -euo pipefail
           apk_dir="build/app/outputs/flutter-apk"
@@ -247,6 +248,14 @@ jobs:
           test "$(native_code "$tv32_apk")" = "'armeabi-v7a'"
 
           # 引擎校验：lite/tv 全部 Skia（false），apple-music Impeller（true）
+          # 输出 APK 实际 Manifest 字段，辨别构建值错误与 aapt2 解析错误。
+          echo "=== 查看四个 APK 的实际 Impeller 配置 ==="
+          for apk in "$lite_apk" "$am_apk" "$tv64_apk" "$tv32_apk"; do
+            echo "=== $(basename "$apk") ==="
+            "$aapt2" dump xmltree "$apk" --file AndroidManifest.xml |
+              grep -A 4 -B 3 -F 'io.flutter.embedding.android.EnableImpeller' || true
+            echo "脚本解析结果: $(impeller_val "$apk")"
+          done
           test "$(impeller_val "$lite_apk")" = "false"
           test "$(impeller_val "$am_apk")" = "true"
           test "$(impeller_val "$tv64_apk")" = "false"
@@ -285,6 +294,9 @@ jobs:
 
       # 上传构建产物（每个 APK 单独一个 artifact，方便下载）
       - name: Upload standard APK (arm64-v8a, Skia)
+        # 即使其它 APK 验证失败，也保留已成功重命名的标准版产物供调试/真机测试。
+        # 这不代表整套 APK 已通过验证；其它变体继续受 Verify APKs 约束。
+        if: ${{ !cancelled() && steps.rename_apks.outcome == 'success' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: MD3音乐-标准版-64位
